@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EpochLog — Web3 Time Capsule</title>
-  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
 
   <style>
     /* ─── Reset ─────────────────────────────────────────── */
@@ -701,6 +700,10 @@
   <!-- ════════════════════════════════════════
        JAVASCRIPT
   ════════════════════════════════════════ -->
+  <!-- Ethers.js loaded here (bottom of body) so the global `ethers`
+       object is guaranteed to exist before the app script below runs. -->
+  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+
   <script>
     /* ── Contract Config ─────────────────────── */
     const CONTRACT_ADDRESS = "0x1207DEd97d8DC5967a400252182B6d8e638B615a";
