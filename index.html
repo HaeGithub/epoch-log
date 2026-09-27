@@ -3,1036 +3,974 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EpochLog — Web3 Time Capsule</title>
+  <title>EpochVault — Time-Locked Digital Vault</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg:      '#151515',
+            surface: '#1c1c1c',
+            card:    '#1f1f1f',
+            accent:  '#04d9d9',
+          },
+          fontFamily: {
+            heading: ['Montserrat', 'sans-serif'],
+            body:    ['Poppins', 'sans-serif'],
+          },
+          boxShadow: {
+            glow:    '0 0 20px rgba(4,217,217,0.25)',
+            'glow-lg':'0 0 40px rgba(4,217,217,0.18)',
+          },
+        },
+      },
+    };
+  </script>
 
   <style>
-    /* ─── Reset ─────────────────────────────────────────── */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    /* ─── Design Tokens ──────────────────────────────────── */
-    :root {
-      --bg:          #07090f;
-      --surface:     #0e1120;
-      --surface-2:   #141828;
-      --border:      rgba(255,255,255,0.07);
-      --accent:      #38bdf8;
-      --accent-dim:  rgba(56,189,248,0.12);
-      --accent-2:    #818cf8;
-      --text:        #e2e8f0;
-      --text-muted:  #64748b;
-      --success:     #34d399;
-      --error:       #f87171;
-      --warning:     #fbbf24;
-      --radius:      14px;
-      --radius-sm:   8px;
-      --font:        'Segoe UI', system-ui, -apple-system, sans-serif;
-      --mono:        'Courier New', Courier, monospace;
-    }
-
-    /* ─── Base ───────────────────────────────────────────── */
-    html, body {
-      height: 100%;
-    }
-
+    /* ── Base ───────────────────────────────────── */
+    html { scroll-behavior: smooth; }
     body {
-      font-family: var(--font);
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow-x: hidden;
-      line-height: 1.6;
-    }
-
-    /* Subtle dot-grid background */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: radial-gradient(rgba(56,189,248,0.06) 1px, transparent 1px);
-      background-size: 36px 36px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ─── View Wrapper ───────────────────────────────────── */
-    .view {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 480px;
-      padding: 24px 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      background-color: #151515;
+      font-family: 'Poppins', sans-serif;
+      color: #ffffff;
       min-height: 100vh;
     }
 
-    /* ─── Card ───────────────────────────────────────────── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 40px 36px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-    }
+    /* ── Scrollbar ──────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #151515; }
+    ::-webkit-scrollbar-thumb { background: #04d9d9; border-radius: 2px; }
 
-    /* ─── Logo / Badge ───────────────────────────────────── */
-    .logo-badge {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      flex-shrink: 0;
-    }
+    /* ── Typography ─────────────────────────────── */
+    h1, h2, h3, .font-heading { font-family: 'Montserrat', sans-serif; }
 
-    /* All inline SVG icons must be explicitly sized */
-    .logo-badge svg,
-    .icon-sm {
-      width: 24px !important;
-      height: 24px !important;
-      min-width: 24px;
-      min-height: 24px;
-      max-width: 24px;
-      max-height: 24px;
-      display: block;
-      flex-shrink: 0;
-    }
-
-    .icon-xs {
-      width: 16px !important;
-      height: 16px !important;
-      min-width: 16px;
-      min-height: 16px;
-      max-width: 16px;
-      max-height: 16px;
-      display: block;
-      flex-shrink: 0;
-    }
-
-    /* ─── Typography ─────────────────────────────────────── */
-    .app-title {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #e2e8f0 30%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 8px;
-      text-align: center;
-    }
-
-    .subtitle {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 32px;
-      line-height: 1.5;
-    }
-
-    .section-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    /* ─── Buttons ────────────────────────────────────────── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 24px;
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      font-weight: 600;
-      font-family: var(--font);
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      width: 100%;
-      white-space: nowrap;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      color: #07090f;
-    }
-    .btn-primary:hover:not(:disabled) {
-      filter: brightness(1.1);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px rgba(56,189,248,0.25);
-    }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover:not(:disabled) {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-dim);
-      transform: translateY(-1px);
-    }
-
-    .btn-outline-accent {
-      background: var(--accent-dim);
-      color: var(--accent);
-      border: 1px solid rgba(56,189,248,0.3);
-    }
-    .btn-outline-accent:hover:not(:disabled) {
-      background: rgba(56,189,248,0.2);
-      transform: translateY(-1px);
-    }
-
-    .btn-outline-purple {
-      background: rgba(129,140,248,0.1);
-      color: var(--accent-2);
-      border: 1px solid rgba(129,140,248,0.3);
-    }
-    .btn-outline-purple:hover:not(:disabled) {
-      background: rgba(129,140,248,0.2);
-      transform: translateY(-1px);
-    }
-
-    /* ─── Divider ────────────────────────────────────────── */
-    .divider {
-      width: 100%;
-      height: 1px;
-      background: var(--border);
-      margin: 28px 0;
-    }
-
-    /* ─── Input / Textarea ───────────────────────────────── */
-    textarea, input[type="text"] {
-      width: 100%;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 0.9rem;
-      padding: 14px 16px;
-      resize: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      outline: none;
-      display: block;
-    }
-    textarea:focus, input[type="text"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(56,189,248,0.1);
-    }
-    textarea::placeholder, input::placeholder {
-      color: var(--text-muted);
-    }
-
-    .input-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      display: block;
-      text-align: left;
-      width: 100%;
-    }
-
-    /* Char counter row */
-    .input-footer {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 6px;
-      width: 100%;
-    }
-    .char-count {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--mono);
-    }
-
-    /* ─── Button Row ─────────────────────────────────────── */
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-      margin-top: 16px;
-    }
-    .btn-row .btn {
-      flex: 1;
-    }
-
-    /* ─── Status Banner ──────────────────────────────────── */
-    .status-banner {
-      width: 100%;
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      font-size: 0.82rem;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-top: 14px;
-      display: none;
-    }
-    .status-banner.visible { display: flex; }
-
-    .status-banner.pending {
-      background: rgba(251,191,36,0.08);
-      border: 1px solid rgba(251,191,36,0.25);
-      color: var(--warning);
-    }
-    .status-banner.success {
-      background: rgba(52,211,153,0.08);
-      border: 1px solid rgba(52,211,153,0.25);
-      color: var(--success);
-    }
-    .status-banner.error {
-      background: rgba(248,113,113,0.08);
-      border: 1px solid rgba(248,113,113,0.25);
-      color: var(--error);
-    }
-    .status-banner.info {
-      background: rgba(56,189,248,0.08);
-      border: 1px solid rgba(56,189,248,0.2);
-      color: var(--accent);
-    }
-
-    .status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .pending .status-dot  { background: var(--warning); animation: pulse 1.4s ease-in-out infinite; }
-    .success .status-dot  { background: var(--success); }
-    .error   .status-dot  { background: var(--error); }
-    .info    .status-dot  { background: var(--accent); }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.4; transform: scale(0.8); }
-    }
-
-    .tx-link {
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      color: inherit;
-      opacity: 0.75;
-      word-break: break-all;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-    .tx-link:hover { opacity: 1; }
-
-    /* ─── Capsule Card ───────────────────────────────────── */
-    .capsule-card {
-      width: 100%;
-      background: var(--surface-2);
-      border: 1px solid rgba(129,140,248,0.25);
-      border-radius: var(--radius-sm);
-      padding: 18px;
-      margin-top: 14px;
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-      animation: fadeUp 0.4s ease;
-    }
-    .capsule-card.visible { display: flex; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .capsule-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
+    /* ── Glow button ────────────────────────────── */
+    .btn-accent {
+      background-color: #04d9d9;
+      color: #0a0a0a;
+      font-family: 'Montserrat', sans-serif;
       font-weight: 700;
-      text-transform: uppercase;
+      transition: box-shadow 0.2s ease, filter 0.2s ease, transform 0.15s ease;
+    }
+    .btn-accent:hover {
+      box-shadow: 0 0 22px rgba(4,217,217,0.5);
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+    .btn-accent:active { transform: translateY(0); }
+
+    /* ── Ghost / outline button ─────────────────── */
+    .btn-ghost {
+      border: 1px solid #333;
+      color: #aaa;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.75rem;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { border-color: #04d9d9; color: #04d9d9; }
+
+    /* ── Card ───────────────────────────────────── */
+    .bento-card {
+      background-color: #1f1f1f;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      transition: border-color 0.25s ease;
+    }
+    .bento-card:hover { border-color: #3a3a3a; }
+
+    /* ── Inputs ─────────────────────────────────── */
+    .field {
+      background: #151515;
+      border: 1px solid #2e2e2e;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      width: 100%;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field::placeholder { color: #4a4a4a; }
+    .field:focus {
+      border-color: #04d9d9;
+      box-shadow: 0 0 0 3px rgba(4,217,217,0.1);
+    }
+
+    /* datetime-local native icon tint */
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.7) sepia(1) saturate(3) hue-rotate(155deg);
+      cursor: pointer;
+    }
+
+    /* ── Status badge ───────────────────────────── */
+    .badge-sealed {
+      background: rgba(4,217,217,0.1);
+      border: 1px solid rgba(4,217,217,0.35);
+      color: #04d9d9;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
       letter-spacing: 0.1em;
-      color: var(--accent-2);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .badge-unlocked {
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.35);
+      color: #34d399;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 3px 8px;
+      border-radius: 4px;
     }
 
-    .capsule-message {
-      font-size: 0.9rem;
-      color: var(--text);
-      line-height: 1.7;
-      word-break: break-word;
-      white-space: pre-wrap;
-    }
-
-    .capsule-ts {
-      display: flex;
+    /* ── Protocol badge ─────────────────────────── */
+    .protocol-badge {
+      display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--mono);
-    }
-
-    /* ─── Wallet Pill ────────────────────────────────────── */
-    .wallet-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(4,217,217,0.35);
       border-radius: 999px;
-      padding: 6px 14px;
-      font-size: 0.8rem;
-      font-family: var(--mono);
-      color: var(--accent);
-      margin-bottom: 24px;
+      padding: 4px 14px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #04d9d9;
     }
-
-    .dot-live {
-      width: 7px;
-      height: 7px;
+    .protocol-dot {
+      width: 6px; height: 6px;
       border-radius: 50%;
-      background: var(--success);
-      flex-shrink: 0;
-      box-shadow: 0 0 6px var(--success);
+      background: #04d9d9;
+      box-shadow: 0 0 6px #04d9d9;
+      animation: blink 1.8s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
     }
 
-    /* ─── Feature Pills on Landing ───────────────────────── */
-    .feature-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 32px;
-    }
-    .feature-pill {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 5px 12px;
-      font-size: 0.75rem;
-      color: var(--text-muted);
+    /* ── Vault card locked blur effect ──────────── */
+    .vault-msg-locked {
+      filter: blur(5px);
+      user-select: none;
+      pointer-events: none;
     }
 
-    /* ─── MetaMask Icon Block ─────────────────────────────── */
-    .mm-icon-block {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #f6851b22 0%, #e2761b22 100%);
-      border: 1px solid rgba(246,133,27,0.25);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      flex-shrink: 0;
-      font-size: 26px;
-      line-height: 1;
-    }
-
-    /* ─── Footer ─────────────────────────────────────────── */
-    footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 10px 16px;
-      background: rgba(7,9,15,0.85);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border);
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    footer a:hover { color: #7dd3fc; }
-    .footer-sep { color: var(--border); }
-
-    /* ─── Spinner ────────────────────────────────────────── */
+    /* ── Spinner ────────────────────────────────── */
     .spinner {
       display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(7,9,15,0.4);
-      border-top-color: #07090f;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #0a0a0a;
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
       flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* view spacing clearance for footer */
-    .view { padding-bottom: 56px; }
+    /* ── Toast notification ─────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 9999;
+      min-width: 240px;
+      max-width: 340px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    #toast.success { background:#1a2e22; border:1px solid #34d399; color:#34d399; }
+    #toast.error   { background:#2e1a1a; border:1px solid #f87171; color:#f87171; }
+    #toast.info    { background:#0f2929; border:1px solid #04d9d9; color:#04d9d9; }
+    #toast.pending { background:#2a2a18; border:1px solid #fbbf24; color:#fbbf24; }
+
+    /* ── Search bar ─────────────────────────────── */
+    .search-wrap { position: relative; }
+    .search-wrap svg {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      width: 16px; height: 16px;
+      color: #4a4a4a;
+      pointer-events: none;
+    }
+    .search-wrap input { padding-left: 40px; }
+
+    /* ── Empty state ────────────────────────────── */
+    .empty-state {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      gap: 10px;
+      color: #444;
+      font-size: 0.85rem;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* ── Wallet address pill ─────────────────────── */
+    .wallet-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #1f1f1f;
+      border: 1px solid #2e2e2e;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.78rem;
+      color: #04d9d9;
+    }
+    .wallet-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #04d9d9;
+      box-shadow: 0 0 6px #04d9d9;
+    }
+
+    /* ── Fade transition ─────────────────────────── */
+    .fade-in {
+      animation: fadeIn 0.45s ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity:0; transform: translateY(12px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ── File icon SVG ───────────────────────────── */
+    .icon-file {
+      width: 22px; height: 22px;
+      color: #04d9d9;
+      flex-shrink: 0;
+    }
   </style>
 </head>
-<body>
+<body class="antialiased">
 
-  <!-- ════════════════════════════════════════
-       VIEW 1: LANDING
-  ════════════════════════════════════════ -->
-  <div id="landing-view" class="view">
-    <div class="card">
-
-      <div class="logo-badge">
-        <!-- Hourglass icon — explicitly 24×24 -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-             stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 22h14"/>
-          <path d="M5 2h14"/>
-          <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/>
-          <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
-        </svg>
-      </div>
-
-      <h1 class="app-title">EpochLog</h1>
-      <p class="subtitle">
-        A Web3 Time Capsule — seal your words on the blockchain,<br>
-        forever immutable, forever yours.
-      </p>
-
-      <div class="feature-list">
-        <span class="feature-pill">🔒 On-chain storage</span>
-        <span class="feature-pill">⛓️ BOT Chain</span>
-        <span class="feature-pill">🕒 UNIX timestamped</span>
-      </div>
-
-      <button class="btn btn-primary" onclick="showView('connect-view')">
-        <!-- Arrow right icon — 16×16 -->
-        <svg class="icon-xs" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.5"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-        </svg>
-        Enter App
-      </button>
-
-    </div>
+  <!-- ══════════════════════════════════════════════
+       TOAST
+  ══════════════════════════════════════════════ -->
+  <div id="toast" role="alert" aria-live="polite">
+    <span id="toast-icon" style="flex-shrink:0; margin-top:1px;">ℹ</span>
+    <span id="toast-msg"></span>
   </div>
 
+  <!-- ══════════════════════════════════════════════
+       NAVBAR
+  ══════════════════════════════════════════════ -->
+  <nav class="sticky top-0 z-50 border-b border-gray-800/60 bg-[#151515]/90 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
 
-  <!-- ════════════════════════════════════════
-       VIEW 2: CONNECT WALLET
-  ════════════════════════════════════════ -->
-  <div id="connect-view" class="view" style="display:none;">
-    <div class="card">
+      <!-- Brand -->
+      <a href="#" class="flex items-center gap-2 flex-shrink-0">
+        <img src="./assets/epochlog-logo-nobg.png" alt="EpochLog"
+             class="h-8 sm:h-10 w-auto object-contain"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+        <!-- Fallback if image missing -->
+        <span style="display:none;" class="items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-black font-heading font-black text-sm">E</span>
+          <span class="font-heading font-bold text-white text-lg tracking-tight">EpochLog</span>
+        </span>
+      </a>
 
-      <div class="mm-icon-block">🦊</div>
+      <!-- Right side -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Connect button (shown when disconnected) -->
+        <button id="btn-connect" onclick="connectWallet()"
+          class="btn-accent px-4 sm:px-5 py-2 rounded-lg text-sm cursor-pointer">
+          Connect Wallet
+        </button>
 
-      <h2 class="app-title" style="font-size:1.5rem; margin-bottom:6px;">Connect Wallet</h2>
-      <p class="subtitle" style="margin-bottom:28px;">
-        Authorize MetaMask to interact<br>with your time capsule.
-      </p>
-
-      <button class="btn btn-primary" id="btn-connect-mm" onclick="connectWallet()">
-        <svg class="icon-xs" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.5"
-             stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="7" width="20" height="14" rx="2"/>
-          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-          <line x1="12" y1="12" x2="12" y2="16"/>
-          <line x1="10" y1="14" x2="14" y2="14"/>
-        </svg>
-        Connect MetaMask
-      </button>
-
-      <div id="connect-status" class="status-banner" style="margin-top:16px;"></div>
-
-      <div class="divider" style="margin:20px 0;"></div>
-
-      <button class="btn btn-ghost" style="width:100%; font-size:0.8rem;"
-              onclick="showView('landing-view')">
-        ← Back to Home
-      </button>
+        <!-- Wallet pill + disconnect (shown when connected) -->
+        <div id="wallet-info" class="hidden items-center gap-2">
+          <div class="wallet-pill">
+            <span class="wallet-dot"></span>
+            <span id="wallet-addr" class="font-mono tracking-wide">0x000...0000</span>
+          </div>
+          <button onclick="disconnectWallet()"
+            class="btn-ghost px-3 py-1.5 rounded-lg cursor-pointer text-xs">
+            Disconnect
+          </button>
+        </div>
+      </div>
 
     </div>
-  </div>
+  </nav>
 
 
-  <!-- ════════════════════════════════════════
-       VIEW 3: DAPP MAIN INTERFACE
-  ════════════════════════════════════════ -->
-  <div id="dapp-view" class="view" style="display:none;">
-    <div class="card">
+  <!-- ══════════════════════════════════════════════
+       HERO (shown when NOT connected)
+  ══════════════════════════════════════════════ -->
+  <section id="hero-section"
+    class="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] px-4 text-center fade-in">
 
-      <!-- Header row -->
-      <div class="logo-badge" style="margin-bottom:16px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-             stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 22h14"/>
-          <path d="M5 2h14"/>
-          <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/>
-          <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>
+    <!-- Background radial glow -->
+    <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div class="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2
+                  w-[600px] h-[600px] rounded-full
+                  bg-accent/5 blur-[120px]"></div>
+    </div>
+
+    <div class="relative z-10 max-w-2xl mx-auto">
+      <!-- Protocol badge -->
+      <div class="protocol-badge mb-8 mx-auto w-fit">
+        <span class="protocol-dot"></span>
+        TIMELOCK PROTOCOL ONLINE
+      </div>
+
+      <!-- Headline -->
+      <h1 class="font-heading font-black text-5xl sm:text-6xl md:text-7xl leading-[1.05] mb-6 text-white">
+        The Time-Locked<br class="hidden sm:block" />
+        Digital Vault
+      </h1>
+
+      <!-- Subline -->
+      <p class="font-body text-gray-400 text-base sm:text-lg max-w-md mx-auto mb-10 leading-relaxed">
+        Seal private messages on-chain and reveal them only when the moment is right.
+        Your history, secured by time.
+        <svg class="inline ml-1.5 -mt-0.5" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="#04d9d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
+      </p>
+
+      <!-- CTA -->
+      <button onclick="connectWallet()"
+        class="btn-accent px-8 py-3.5 rounded-xl text-base cursor-pointer shadow-glow">
+        Connect MetaMask to Start
+      </button>
+
+      <!-- Feature pills -->
+      <div class="flex flex-wrap justify-center gap-3 mt-12">
+        <span class="px-4 py-2 rounded-full bg-[#1f1f1f] border border-gray-800 text-gray-500 text-xs font-body">
+          🔒 On-chain Encryption
+        </span>
+        <span class="px-4 py-2 rounded-full bg-[#1f1f1f] border border-gray-800 text-gray-500 text-xs font-body">
+          ⛓️ BOT Chain
+        </span>
+        <span class="px-4 py-2 rounded-full bg-[#1f1f1f] border border-gray-800 text-gray-500 text-xs font-body">
+          ⏱️ Time-Locked Access
+        </span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       DASHBOARD (shown when connected)
+  ══════════════════════════════════════════════ -->
+  <main id="dashboard-section" class="hidden max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-10 fade-in">
+
+    <!-- ── ROW 1: Create Vault + Stats ──────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <!-- Create Vault Card (2/3 width on desktop) -->
+      <div class="bento-card p-6 lg:col-span-2">
+        <div class="flex items-start justify-between mb-5">
+          <div>
+            <h2 class="font-heading font-bold text-xl text-white">Create a new vault</h2>
+            <p class="text-[10px] font-heading font-bold tracking-widest text-accent mt-1">AES-256 ENCRYPTED</p>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="#04d9d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               class="flex-shrink-0 mt-1">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+
+        <form onsubmit="handleCreateVault(event)" class="space-y-4">
+          <!-- Title -->
+          <div>
+            <label class="block text-[10px] font-heading font-bold tracking-widest text-gray-500 mb-2">
+              VAULT TITLE
+            </label>
+            <input id="vault-title" type="text"
+              placeholder="E.g. Letters to Future Me"
+              class="field" required />
+          </div>
+
+          <!-- Message -->
+          <div>
+            <label class="block text-[10px] font-heading font-bold tracking-widest text-gray-500 mb-2">
+              MESSAGE
+            </label>
+            <textarea id="vault-message" rows="5"
+              placeholder="Write your message..."
+              class="field resize-none" required></textarea>
+          </div>
+
+          <!-- Unlock Date + Button row -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+            <div class="flex-1 w-full">
+              <label class="block text-[10px] font-heading font-bold tracking-widest text-gray-500 mb-2">
+                SET UNLOCK DATE
+              </label>
+              <input id="vault-unlock" type="datetime-local"
+                class="field" required />
+            </div>
+            <button type="submit" id="btn-lock"
+              class="btn-accent w-full sm:w-auto px-7 py-3 rounded-xl text-sm cursor-pointer flex items-center justify-center gap-2 flex-shrink-0">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Lock in Blockchain
+            </button>
+          </div>
+        </form>
       </div>
 
-      <h2 class="app-title" style="font-size:1.4rem; margin-bottom:6px;">Your Time Capsule</h2>
+      <!-- Stats Card (1/3 width on desktop) -->
+      <div class="bento-card p-6 flex flex-col justify-between gap-6">
+        <div>
+          <p class="text-[10px] font-heading font-bold tracking-widest text-gray-500 mb-1">VAULT SUMMARY</p>
+          <h3 class="font-heading font-bold text-lg text-white">Your Activity</h3>
+        </div>
 
-      <!-- Wallet pill -->
-      <div class="wallet-pill">
-        <span class="dot-live"></span>
-        <span id="wallet-display">0x000...0000</span>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400 text-sm font-body">Active Vaults</span>
+            <span id="stat-active" class="font-heading font-bold text-accent text-xl">—</span>
+          </div>
+          <div class="flex items-center justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400 text-sm font-body">Unlocked</span>
+            <span id="stat-unlocked" class="font-heading font-bold text-white text-xl">—</span>
+          </div>
+          <div class="flex items-center justify-between py-3">
+            <span class="text-gray-400 text-sm font-body">Total</span>
+            <span id="stat-total" class="font-heading font-bold text-white text-xl">—</span>
+          </div>
+        </div>
+
+        <button onclick="getUserVaults()"
+          class="btn-ghost w-full py-2.5 rounded-xl cursor-pointer flex items-center justify-center gap-2 text-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.53"/>
+          </svg>
+          Refresh Vaults
+        </button>
+      </div>
+    </div>
+
+    <!-- ── ROW 2: Vault Gallery ──────────────────── -->
+    <div>
+      <!-- Section header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div class="flex items-baseline gap-3">
+          <h2 class="font-heading font-bold text-2xl text-white">Your Vaults</h2>
+          <span id="vault-count-label"
+            class="text-[10px] font-heading font-bold tracking-widest text-gray-500 self-center">
+            — ACTIVE CAPSULES
+          </span>
+        </div>
+
+        <!-- Search -->
+        <div class="search-wrap w-full sm:w-64">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input id="vault-search" type="text" placeholder="Search vaults..."
+            class="field py-2.5" oninput="filterVaults()" />
+        </div>
       </div>
 
-      <!-- Message Input -->
-      <span class="input-label">Message</span>
-      <textarea
-        id="msg-input"
-        rows="5"
-        maxlength="1000"
-        placeholder="Write your memory, goal, or prediction here..."
-        oninput="updateCharCount()"
-      ></textarea>
-      <div class="input-footer">
-        <span class="char-count" id="char-count">0 / 1000</span>
+      <!-- Vault grid -->
+      <div id="vault-grid"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Empty state shown by default -->
+        <div class="empty-state col-span-full">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+               stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8m-4-4v4"/>
+          </svg>
+          <p>No vaults found. Create your first vault above.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+
+  <!-- ══════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════ -->
+  <footer class="border-t border-gray-800/60 mt-20 py-8 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+
+      <div class="flex items-center gap-3">
+        <span class="text-gray-500 text-sm font-body">Powered by</span>
+        <img src="./assets/BOT-chain-logo.png" alt="BOT Chain"
+             class="h-5 sm:h-6 w-auto object-contain"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+        <span style="display:none;" class="font-heading font-bold text-accent text-sm">BOT Chain</span>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="btn-row">
-        <button class="btn btn-outline-accent" id="btn-lock" onclick="lockMessage()">
-          <!-- Lock icon — 16×16 -->
-          <svg class="icon-xs" viewBox="0 0 24 24" fill="none"
+      <div class="flex items-center gap-6">
+        <a href="https://botchain.ai" target="_blank" rel="noopener"
+           class="text-gray-500 hover:text-accent text-sm font-body transition-colors">
+          botchain.ai
+        </a>
+        <a href="https://scan.bohr.life" target="_blank" rel="noopener"
+           class="text-gray-500 hover:text-accent text-sm font-body transition-colors flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          Block Explorer
+        </a>
+      </div>
+
+      <p class="text-gray-700 text-xs font-body">
+        © 2026 EpochVault. All rights reserved.
+      </p>
+    </div>
+  </footer>
+
+
+  <!-- ══════════════════════════════════════════════
+       ETHERS.JS  — must be BEFORE app script
+  ══════════════════════════════════════════════ -->
+  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js" crossorigin="anonymous"></script>
+
+  <!-- ══════════════════════════════════════════════
+       APP SCRIPT
+  ══════════════════════════════════════════════ -->
+  <script>
+    /* ════════════════════════════════════════════
+       CONTRACT CONFIG
+       ── Insert your deployed contract address
+          and ABI here before deploying. ──
+    ════════════════════════════════════════════ */
+    const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
+    const CONTRACT_ABI     = [
+      /* ← Paste your ABI array here */
+    ];
+
+    /* ════════════════════════════════════════════
+       STATE
+    ════════════════════════════════════════════ */
+    let provider     = null;
+    let signer       = null;
+    let contract     = null;
+    let walletAddr   = null;
+    let allVaults    = [];   // raw vault data for client-side filter
+
+    /* ════════════════════════════════════════════
+       UI HELPERS
+    ════════════════════════════════════════════ */
+
+    /** Show / hide sections based on connection state */
+    function setConnectedUI(connected) {
+      const hero      = document.getElementById('hero-section');
+      const dashboard = document.getElementById('dashboard-section');
+      const btnCon    = document.getElementById('btn-connect');
+      const walletInfo = document.getElementById('wallet-info');
+
+      if (connected) {
+        hero.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        dashboard.classList.add('fade-in');
+        btnCon.classList.add('hidden');
+        walletInfo.classList.remove('hidden');
+        walletInfo.classList.add('flex');
+      } else {
+        hero.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+        btnCon.classList.remove('hidden');
+        walletInfo.classList.add('hidden');
+        walletInfo.classList.remove('flex');
+      }
+    }
+
+    /** Short wallet address */
+    function shorten(addr) {
+      return addr.slice(0, 6) + '...' + addr.slice(-4);
+    }
+
+    /** Toast notifications */
+    let toastTimer = null;
+    function showToast(type, message, duration = 4000) {
+      const t    = document.getElementById('toast');
+      const msg  = document.getElementById('toast-msg');
+      const icon = document.getElementById('toast-icon');
+      const icons = { success: '✓', error: '✕', info: 'ℹ', pending: '⏳' };
+
+      t.className = '';
+      t.classList.add(type);
+      msg.textContent  = message;
+      icon.textContent = icons[type] || 'ℹ';
+
+      // force reflow for re-trigger
+      void t.offsetHeight;
+      t.classList.add('show');
+
+      if (toastTimer) clearTimeout(toastTimer);
+      if (type !== 'pending') {
+        toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+      }
+    }
+    function hideToast() {
+      document.getElementById('toast').classList.remove('show');
+    }
+
+    /** Button loading state */
+    function setBtnLoading(btnId, loading, text) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      if (loading) {
+        btn.disabled = true;
+        btn.dataset.orig = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = btn.dataset.orig || text;
+      }
+    }
+
+    /* ════════════════════════════════════════════
+       WALLET CONNECTION
+    ════════════════════════════════════════════ */
+    async function connectWallet() {
+      // Guard: MetaMask / EIP-1193 provider not present
+      if (typeof window.ethereum === 'undefined') {
+        showToast('error',
+          'MetaMask not found. Install the extension and serve the page over http://, not file://.');
+        return;
+      }
+
+      setBtnLoading('btn-connect', true, 'Connecting…');
+
+      try {
+        // Request account access
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        if (!accounts || accounts.length === 0) {
+          throw Object.assign(new Error('No accounts returned.'), { code: 'NO_ACCOUNTS' });
+        }
+
+        // Initialise ethers
+        provider   = new ethers.providers.Web3Provider(window.ethereum);
+        signer     = provider.getSigner();
+        walletAddr = accounts[0];
+
+        // Instantiate contract (only if ABI is populated)
+        if (CONTRACT_ABI.length > 0) {
+          contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        }
+
+        // Update UI
+        document.getElementById('wallet-addr').textContent = shorten(walletAddr);
+        setConnectedUI(true);
+        showToast('success', 'Wallet connected!');
+
+        // Load user's vaults
+        await getUserVaults();
+
+      } catch (err) {
+        let msg;
+        switch (err.code) {
+          case 4001:        msg = 'Connection rejected. Approve the MetaMask popup.'; break;
+          case -32002:      msg = 'Connection pending in MetaMask. Open it and approve.'; break;
+          case -32603:      msg = 'MetaMask internal error. Try reloading.'; break;
+          case 'NO_ACCOUNTS': msg = 'No accounts returned. Unlock MetaMask.'; break;
+          default:          msg = 'Connection failed: ' + (err.message || 'Unknown error');
+        }
+        showToast('error', msg);
+      } finally {
+        const btn = document.getElementById('btn-connect');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Connect Wallet';
+        }
+      }
+    }
+
+    /** Reset all state and return to hero */
+    function disconnectWallet() {
+      provider = signer = contract = walletAddr = null;
+      allVaults = [];
+      renderVaults([]);
+      updateStats(0, 0, 0);
+      setConnectedUI(false);
+      showToast('info', 'Wallet disconnected.');
+    }
+
+    /* ════════════════════════════════════════════
+       CREATE VAULT
+    ════════════════════════════════════════════ */
+    async function handleCreateVault(e) {
+      e.preventDefault();
+      await createVault();
+    }
+
+    /**
+     * createVault()
+     * Reads form fields, calls the smart contract's create/lock function.
+     * ── TODO: Replace the contract call stub with your actual method. ──
+     */
+    async function createVault() {
+      if (!signer) {
+        showToast('error', 'Connect your wallet first.');
+        return;
+      }
+
+      const title      = document.getElementById('vault-title').value.trim();
+      const message    = document.getElementById('vault-message').value.trim();
+      const unlockRaw  = document.getElementById('vault-unlock').value;
+
+      if (!title || !message || !unlockRaw) {
+        showToast('error', 'Please fill in all fields.');
+        return;
+      }
+
+      const unlockTimestamp = Math.floor(new Date(unlockRaw).getTime() / 1000);
+      if (unlockTimestamp <= Math.floor(Date.now() / 1000)) {
+        showToast('error', 'Unlock date must be in the future.');
+        return;
+      }
+
+      setBtnLoading('btn-lock', true, 'Locking…');
+      showToast('pending', 'Waiting for MetaMask confirmation…');
+
+      try {
+        // ── CONTRACT CALL ──────────────────────────────────────────────
+        // Replace with your actual contract method, e.g.:
+        // const tx = await contract.createVault(title, message, unlockTimestamp);
+        // await tx.wait();
+        // ──────────────────────────────────────────────────────────────
+        throw new Error('Contract not deployed yet — fill in CONTRACT_ADDRESS and ABI.');
+        // ↑ Remove the line above once your contract is live.
+
+      } catch (err) {
+        hideToast();
+        const msg = err.code === 4001 || err.code === 'ACTION_REJECTED'
+          ? 'Transaction rejected.'
+          : err.reason
+            ? `Contract error: ${err.reason}`
+            : err.message || 'Transaction failed.';
+        showToast('error', msg);
+      } finally {
+        setBtnLoading('btn-lock', false, `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2.5"
                stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
-          Lock Message
-        </button>
-        <button class="btn btn-outline-purple" id="btn-read" onclick="readCapsule()">
-          <!-- Search icon — 16×16 -->
-          <svg class="icon-xs" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.5"
-               stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-          Read Capsule
-        </button>
-      </div>
-
-      <!-- Status Banner -->
-      <div id="dapp-status" class="status-banner">
-        <div class="status-row">
-          <span class="status-dot"></span>
-          <span id="dapp-status-text"></span>
-        </div>
-        <a id="dapp-tx-link" class="tx-link" href="#" target="_blank" rel="noopener"
-           style="display:none; padding-left:15px;"></a>
-      </div>
-
-      <!-- Capsule Display Card -->
-      <div id="capsule-card" class="capsule-card">
-        <div class="capsule-header">
-          <!-- Diamond icon — 16×16 -->
-          <svg class="icon-xs" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 22 9 18 21 6 21 2 9 12 2"/>
-          </svg>
-          Capsule Retrieved
-        </div>
-        <p class="capsule-message" id="capsule-message"></p>
-        <div class="capsule-ts">
-          <!-- Clock icon — 14×14 -->
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round"
-               style="flex-shrink:0;">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span id="capsule-ts"></span>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-
-  <!-- ─── Footer ──────────────────────────────── -->
-  <footer>
-    <span>Powered by <a href="https://botchain.ai" target="_blank" rel="noopener">BOT Chain</a></span>
-    <span class="footer-sep">|</span>
-    <a href="https://scan.bohr.life" target="_blank" rel="noopener">Block Explorer ↗</a>
-  </footer>
-
-
-  <!-- ════════════════════════════════════════
-       JAVASCRIPT
-  ════════════════════════════════════════ -->
-  <!-- Ethers.js loaded here (bottom of body) so the global `ethers`
-       object is guaranteed to exist before the app script below runs. -->
-  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js" crossorigin="anonymous"></script>
-
-  <script>
-    /* ── Contract Config ─────────────────────── */
-    const CONTRACT_ADDRESS = "0x1207DEd97d8DC5967a400252182B6d8e638B615a";
-    const CONTRACT_ABI = [
-      {
-        "anonymous": false,
-        "inputs": [
-          { "indexed": true,  "internalType": "address", "name": "owner",     "type": "address" },
-          { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
-        ],
-        "name": "CapsuleCreated",
-        "type": "event"
-      },
-      {
-        "inputs": [],
-        "name": "getMyCapsule",
-        "outputs": [
-          { "internalType": "string",  "name": "", "type": "string"  },
-          { "internalType": "uint256", "name": "", "type": "uint256" }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          { "internalType": "string", "name": "_message", "type": "string" }
-        ],
-        "name": "lockMessage",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          { "internalType": "address", "name": "", "type": "address" }
-        ],
-        "name": "userCapsules",
-        "outputs": [
-          { "internalType": "string",  "name": "message",   "type": "string"  },
-          { "internalType": "uint256", "name": "timestamp", "type": "uint256" },
-          { "internalType": "bool",    "name": "isLocked",  "type": "bool"    }
-        ],
-        "stateMutability": "view",
-        "type": "function"
+          Lock in Blockchain`);
       }
-    ];
+    }
 
-    /* ── State ───────────────────────────────── */
-    let provider = null;
-    let signer   = null;
-    let contract = null;
+    /* ════════════════════════════════════════════
+       READ VAULTS
+    ════════════════════════════════════════════ */
 
-    /* ── View Navigation ─────────────────────── */
-    const VIEWS = ['landing-view', 'connect-view', 'dapp-view'];
+    /**
+     * getUserVaults()
+     * Fetches all vaults belonging to the connected wallet from the contract.
+     * ── TODO: Replace the stub below with your actual read call. ──
+     */
+    async function getUserVaults() {
+      if (!signer) return;
 
-    function showView(id) {
-      VIEWS.forEach(v => {
-        document.getElementById(v).style.display = (v === id) ? 'flex' : 'none';
+      const btn = document.querySelector('[onclick="getUserVaults()"]');
+      if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+
+      try {
+        // ── CONTRACT READ ──────────────────────────────────────────────
+        // Replace with your actual contract method, e.g.:
+        // const raw = await contract.getMyVaults();
+        // allVaults = raw.map(v => ({
+        //   title:     v.title,
+        //   message:   v.message,   // 'LOCKED' if still sealed
+        //   unlockTs:  v.unlockTime.toNumber(),
+        // }));
+        // ──────────────────────────────────────────────────────────────
+
+        // ── PLACEHOLDER DATA (remove when contract is live) ────────────
+        allVaults = [
+          { title: 'Project Atlas',         message: 'LOCKED', unlockTs: 1760716800 },
+          { title: 'Letters to future me',  message: 'LOCKED', unlockTs: 1767225600 },
+          { title: 'Genesis Memorandum',    message: 'LOCKED', unlockTs: 1822435200 },
+        ];
+        // ──────────────────────────────────────────────────────────────
+
+        renderVaults(allVaults);
+        updateStats(
+          allVaults.filter(v => v.message === 'LOCKED').length,
+          allVaults.filter(v => v.message !== 'LOCKED').length,
+          allVaults.length
+        );
+
+      } catch (err) {
+        showToast('error', 'Failed to load vaults: ' + (err.reason || err.message));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 .49-3.53"/>
+            </svg> Refresh Vaults`;
+        }
+      }
+    }
+
+    /* ════════════════════════════════════════════
+       RENDER VAULT CARDS
+    ════════════════════════════════════════════ */
+    function renderVaults(vaults) {
+      const grid = document.getElementById('vault-grid');
+      grid.innerHTML = '';
+
+      if (!vaults.length) {
+        grid.innerHTML = `
+          <div class="empty-state col-span-full">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                 stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8m-4-4v4"/>
+            </svg>
+            <p>No vaults match your search.</p>
+          </div>`;
+        return;
+      }
+
+      vaults.forEach((v, i) => {
+        const isLocked    = v.message === 'LOCKED';
+        const unlockDate  = new Date(v.unlockTs * 1000);
+        const dateStr     = unlockDate.toLocaleDateString('en-GB', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        }).toUpperCase();
+
+        const card = document.createElement('div');
+        card.className = 'bento-card p-5 flex flex-col gap-4 fade-in cursor-pointer hover:border-accent/40 transition-colors';
+        card.style.animationDelay = `${i * 0.07}s`;
+        card.innerHTML = `
+          <!-- Top row -->
+          <div class="flex items-center justify-between">
+            <svg class="icon-file" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            <span class="${isLocked ? 'badge-sealed' : 'badge-unlocked'}">
+              ${isLocked ? '🔒 SEALED' : '🔓 UNLOCKED'}
+            </span>
+          </div>
+
+          <!-- Title & message -->
+          <div class="flex-1">
+            <h3 class="font-heading font-bold text-white text-base mb-1 truncate">${escapeHtml(v.title)}</h3>
+            ${isLocked
+              ? `<p class="text-gray-600 text-xs font-body vault-msg-locked select-none">
+                   ██████████████ ████████████████ ██████████
+                 </p>`
+              : `<p class="text-gray-400 text-xs font-body line-clamp-2 leading-relaxed">
+                   ${escapeHtml(v.message)}
+                 </p>`
+            }
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+            <span class="text-[10px] font-heading font-bold tracking-widest text-gray-600">
+              ${isLocked ? 'UNLOCKS' : 'UNLOCKED'}
+            </span>
+            <span class="text-[10px] font-mono text-gray-400">${dateStr}</span>
+          </div>`;
+
+        grid.appendChild(card);
       });
     }
 
-    /* ── Character Counter ───────────────────── */
-    function updateCharCount() {
-      const ta  = document.getElementById('msg-input');
-      const el  = document.getElementById('char-count');
-      const len = ta.value.length;
-      el.textContent = `${len} / 1000`;
-      el.style.color = len > 900 ? '#f87171' : len > 750 ? '#fbbf24' : '';
+    /** Simple HTML escape to prevent XSS from on-chain data */
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    /* ── Helpers: Address ────────────────────── */
-    function shorten(addr) {
-      return addr.slice(0, 6) + '...' + addr.slice(-4);
+    /* ════════════════════════════════════════════
+       SEARCH / FILTER
+    ════════════════════════════════════════════ */
+    function filterVaults() {
+      const q = document.getElementById('vault-search').value.trim().toLowerCase();
+      const filtered = q
+        ? allVaults.filter(v => v.title.toLowerCase().includes(q))
+        : allVaults;
+      renderVaults(filtered);
     }
 
-    /* ── Helpers: Status banner (connect view) ─ */
-    function setConnectStatus(type, message) {
-      const el = document.getElementById('connect-status');
-      el.className = `status-banner ${type} visible`;
-      el.innerHTML = `
-        <div class="status-row">
-          <span class="status-dot"></span>
-          <span>${message}</span>
-        </div>`;
+    /* ════════════════════════════════════════════
+       STATS
+    ════════════════════════════════════════════ */
+    function updateStats(active, unlocked, total) {
+      document.getElementById('stat-active').textContent   = active;
+      document.getElementById('stat-unlocked').textContent = unlocked;
+      document.getElementById('stat-total').textContent    = total;
+      document.getElementById('vault-count-label').textContent =
+        `${String(active).padStart(2, '0')} ACTIVE CAPSULES`;
     }
 
-    /* ── Helpers: Status banner (dapp view) ──── */
-    function setDappStatus(type, message, txHash) {
-      const banner = document.getElementById('dapp-status');
-      const text   = document.getElementById('dapp-status-text');
-      const link   = document.getElementById('dapp-tx-link');
-
-      banner.className = `status-banner ${type} visible`;
-      text.textContent = message;
-
-      if (txHash) {
-        link.style.display = 'inline';
-        link.href = `https://scan.bohr.life/tx/${txHash}`;
-        link.textContent = `TX: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`;
-      } else {
-        link.style.display = 'none';
-      }
-    }
-
-    function clearDappStatus() {
-      const banner = document.getElementById('dapp-status');
-      banner.className = 'status-banner';
-      document.getElementById('dapp-tx-link').style.display = 'none';
-    }
-
-    /* ── Helpers: Button loading ─────────────── */
-    function setBtnLoading(btn, loading, label, iconHTML) {
-      if (loading) {
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner"></span> ${label}`;
-      } else {
-        btn.disabled = false;
-        btn.innerHTML = `${iconHTML} ${label}`;
-      }
-    }
-
-    const LOCK_BTN_ICON = `<svg class="icon-xs" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2.5"
-      stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2"/>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-    </svg>`;
-
-    const READ_BTN_ICON = `<svg class="icon-xs" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2.5"
-      stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.35-4.35"/>
-    </svg>`;
-
-    /* ── Core: Connect Wallet ────────────────── */
-    async function connectWallet() {
-      // ── Guard: MetaMask / EIP-1193 provider not present ────────────────
-      // Fires on file://, or when no wallet extension is installed.
-      // Use typeof so it never throws a ReferenceError.
-      if (typeof window.ethereum === 'undefined') {
-        setConnectStatus(
-          'error',
-          'MetaMask not found. Make sure the extension is installed and the ' +
-          'page is served over http:// or https://, not file://.'
-        );
-        return;
-      }
-
-      const btn = document.getElementById('btn-connect-mm');
-
-      // Capture icon HTML once so we can restore the button on failure
-      const CONNECT_ICON = `<svg class="icon-xs" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="7" width="20" height="14" rx="2"/>
-        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-        <line x1="12" y1="12" x2="12" y2="16"/>
-        <line x1="10" y1="14" x2="14" y2="14"/>
-      </svg>`;
-
-      setBtnLoading(btn, true, 'Connecting…', '🦊');
-      setConnectStatus('pending', 'Check MetaMask — approve the connection popup…');
-
-      try {
-        // ── Step 1: Request account access ──────────────────────────────
-        // Opens the MetaMask popup if not already permitted.
-        // Returns an array of lowercase hex addresses on success.
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        });
-
-        // Sanity-check: guard against an empty array (rare on mobile wallets)
-        if (!accounts || accounts.length === 0) {
-          throw Object.assign(new Error('No accounts returned by MetaMask.'), { code: 'NO_ACCOUNTS' });
-        }
-
-        // ── Step 2: Initialise ethers provider ──────────────────────────
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-
-        // ── Step 3: Get signer (the connected account) ──────────────────
-        signer = provider.getSigner();
-
-        // ── Step 4: Instantiate contract ────────────────────────────────
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-        // ── Step 5: Update UI & navigate ────────────────────────────────
-        document.getElementById('wallet-display').textContent = shorten(accounts[0]);
-        showView('dapp-view');
-
-      } catch (err) {
-        // Restore the button so the user can retry
-        setBtnLoading(btn, false, 'Connect MetaMask', CONNECT_ICON);
-
-        // ── Classified error messages ────────────────────────────────────
-        //
-        //   4001       User closed the popup or clicked Deny
-        //  -32002       A request is already pending (user dismissed without acting)
-        //  -32603       MetaMask internal / JSON-RPC error
-        //  NO_ACCOUNTS  Extension connected but returned no addresses
-        //  (other)      Surface raw message for debuggability
-
-        let userMessage;
-        switch (err.code) {
-          case 4001:
-            userMessage = 'Connection rejected. Click "Connect MetaMask" and approve the popup.';
-            break;
-          case -32002:
-            userMessage = 'A connection request is already pending in MetaMask. Open the extension and approve it, then try again.';
-            break;
-          case -32603:
-            userMessage = 'MetaMask internal error. Try reloading the page or restarting the browser extension.';
-            break;
-          case 'NO_ACCOUNTS':
-            userMessage = 'No accounts were returned. Please unlock your wallet and retry.';
-            break;
-          default:
-            userMessage = 'Connection failed: ' +
-              (err.message || 'Unknown error') +
-              (err.code != null ? ` (code: ${err.code})` : '');
-        }
-
-        setConnectStatus('error', userMessage);
-      }
-    }
-
-    /* ── Core: Lock Message ──────────────────── */
-    async function lockMessage() {
-      const msg = document.getElementById('msg-input').value.trim();
-
-      if (!msg) {
-        setDappStatus('error', 'Please write a message before locking.');
-        return;
-      }
-      if (!contract) {
-        setDappStatus('error', 'No contract connection. Please reconnect your wallet.');
-        return;
-      }
-
-      const btn = document.getElementById('btn-lock');
-      setBtnLoading(btn, true, 'Locking…', LOCK_BTN_ICON);
-      clearDappStatus();
-      document.getElementById('capsule-card').classList.remove('visible');
-
-      try {
-        setDappStatus('pending', 'Waiting for MetaMask confirmation…');
-        const tx = await contract.lockMessage(msg);
-
-        setDappStatus('pending', 'Transaction submitted — awaiting confirmation…', tx.hash);
-        await tx.wait();
-
-        setDappStatus('success', 'Message locked on-chain forever! 🔒', tx.hash);
-        document.getElementById('msg-input').value = '';
-        updateCharCount();
-
-      } catch (err) {
-        const msg = err.code === 'ACTION_REJECTED' || err.code === 4001
-          ? 'Transaction rejected by user.'
-          : err.reason
-            ? `Contract error: ${err.reason}`
-            : 'Transaction failed: ' + (err.message || 'Unknown error');
-        setDappStatus('error', msg);
-      } finally {
-        setBtnLoading(btn, false, 'Lock Message', LOCK_BTN_ICON);
-      }
-    }
-
-    /* ── Core: Read Capsule ──────────────────── */
-    async function readCapsule() {
-      if (!contract) {
-        setDappStatus('error', 'No contract connection. Please reconnect your wallet.');
-        return;
-      }
-
-      const btn = document.getElementById('btn-read');
-      setBtnLoading(btn, true, 'Reading…', READ_BTN_ICON);
-      clearDappStatus();
-      document.getElementById('capsule-card').classList.remove('visible');
-
-      try {
-        setDappStatus('info', 'Fetching your capsule from the blockchain…');
-        const result    = await contract.getMyCapsule();
-        const message   = result[0];
-        const timestamp = result[1].toNumber();
-
-        if (!message || timestamp === 0) {
-          setDappStatus('info', 'No capsule found. Lock a message first!');
-          return;
-        }
-
-        document.getElementById('capsule-message').textContent = message;
-        document.getElementById('capsule-ts').textContent =
-          new Date(timestamp * 1000).toLocaleString(undefined, {
-            dateStyle: 'long',
-            timeStyle: 'medium'
-          });
-
-        document.getElementById('capsule-card').classList.add('visible');
-        clearDappStatus();
-
-      } catch (err) {
-        const msg = err.reason
-          ? `Contract error: ${err.reason}`
-          : 'Failed to read capsule: ' + (err.message || 'Unknown error');
-        setDappStatus('error', msg);
-      } finally {
-        setBtnLoading(btn, false, 'Read Capsule', READ_BTN_ICON);
-      }
-    }
-
-    /* ── MetaMask Event Listeners ────────────── */
+    /* ════════════════════════════════════════════
+       METAMASK EVENT LISTENERS
+    ════════════════════════════════════════════ */
     if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.on('accountsChanged', (accounts) => {
+      window.ethereum.on('accountsChanged', async (accounts) => {
         if (accounts.length === 0) {
-          // Disconnected
-          provider = signer = contract = null;
-          showView('connect-view');
-          setConnectStatus('info', 'Wallet disconnected. Please reconnect.');
+          disconnectWallet();
         } else {
-          document.getElementById('wallet-display').textContent = shorten(accounts[0]);
-          signer   = provider.getSigner();
-          contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-          clearDappStatus();
-          document.getElementById('capsule-card').classList.remove('visible');
+          walletAddr = accounts[0];
+          document.getElementById('wallet-addr').textContent = shorten(walletAddr);
+          signer = provider.getSigner();
+          if (CONTRACT_ABI.length > 0) {
+            contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+          }
+          allVaults = [];
+          await getUserVaults();
+          showToast('info', 'Account switched to ' + shorten(walletAddr));
         }
       });
 
       window.ethereum.on('chainChanged', () => {
-        window.location.reload();
+        showToast('info', 'Network changed — reloading…');
+        setTimeout(() => window.location.reload(), 1000);
       });
     }
   </script>
