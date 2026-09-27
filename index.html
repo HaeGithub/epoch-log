@@ -801,10 +801,11 @@
         return;
       }
 
-      // If no unlock date provided → default to now + 10 seconds
-      // (allows instant-unlock vaults without the contract rejecting a 0 timestamp)
+      // Convert datetime-local string → UNIX epoch seconds (what Solidity expects).
+      // new Date(string).getTime() returns milliseconds → divide by 1000 → floor to integer.
       let unlockTimestamp;
       if (!unlockRaw) {
+        // No date provided → default to now + 10 s (instant-unlock test vault)
         unlockTimestamp = Math.floor(Date.now() / 1000) + 10;
       } else {
         unlockTimestamp = Math.floor(new Date(unlockRaw).getTime() / 1000);
@@ -813,6 +814,8 @@
           return;
         }
       }
+      console.log('createVault — unlockTimestamp (UNIX s):', unlockTimestamp,
+                  '| human:', new Date(unlockTimestamp * 1000).toLocaleString());
 
       setBtnLoading('btn-lock', true, 'Locking…');
       showToast('pending', 'Waiting for MetaMask confirmation…');
@@ -873,12 +876,14 @@
         // Call the contract — returns Capsule[] struct array
         const raw = await contract.getUserVaults();
 
-        // Map on-chain struct fields → local shape used by renderVaults()
-        const now = Math.floor(Date.now() / 1000);
+        // Map on-chain struct fields → local shape used by renderVaults().
+        // IMPORTANT: The contract itself returns "LOCKED" as the message string
+        // when block.timestamp < unlockTime, and the real message once unlocked.
+        // We pass v.message through DIRECTLY — never override it on the frontend,
+        // as the client clock may differ from the block timestamp.
         allVaults = raw.map(v => ({
           title:    v.title,
-          // Show 'LOCKED' sentinel until the unlock time has passed
-          message:  v.unlockTime.toNumber() > now ? 'LOCKED' : v.message,
+          message:  v.message,          // "LOCKED" or the real text — trust the contract
           unlockTs: v.unlockTime.toNumber(),
         }));
 
