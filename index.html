@@ -287,7 +287,7 @@
       <!-- Brand -->
       <a href="#" class="flex items-center gap-2 flex-shrink-0">
         <img src="./assets/epochlog-logo-nobg.png" alt="EpochLog"
-             class="h-8 sm:h-10 w-auto object-contain"
+             class="h-8 md:h-12 w-auto object-contain"
              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
         <!-- Fallback if image missing -->
         <span style="display:none;" class="items-center gap-2">
@@ -342,7 +342,7 @@
       </div>
 
       <!-- Headline -->
-      <h1 class="font-heading font-black text-5xl sm:text-6xl md:text-7xl leading-[1.05] mb-6 text-white">
+      <h1 class="font-heading font-extrabold text-4xl md:text-6xl lg:text-7xl leading-[1.05] mb-6 text-white w-full text-center">
         The Time-Locked<br class="hidden sm:block" />
         Digital Vault
       </h1>
@@ -528,10 +528,12 @@
 
       <div class="flex items-center gap-3">
         <span class="text-gray-500 text-sm font-body">Powered by</span>
-        <img src="./assets/BOT-chain-logo.png" alt="BOT Chain"
-             class="h-5 sm:h-6 w-auto object-contain"
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
-        <span style="display:none;" class="font-heading font-bold text-accent text-sm">BOT Chain</span>
+        <a href="https://botchain.ai" target="_blank" rel="noopener" class="flex items-center">
+          <img src="./assets/BOT-chain-logo.png" alt="BOT Chain"
+               class="h-5 sm:h-6 w-auto object-contain transition-opacity hover:opacity-80"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+          <span style="display:none;" class="font-heading font-bold text-accent text-sm">BOT Chain</span>
+        </a>
       </div>
 
       <div class="flex items-center gap-6">
@@ -748,15 +750,22 @@
       const message    = document.getElementById('vault-message').value.trim();
       const unlockRaw  = document.getElementById('vault-unlock').value;
 
-      if (!title || !message || !unlockRaw) {
-        showToast('error', 'Please fill in all fields.');
+      if (!title || !message) {
+        showToast('error', 'Please fill in the title and message fields.');
         return;
       }
 
-      const unlockTimestamp = Math.floor(new Date(unlockRaw).getTime() / 1000);
-      if (unlockTimestamp <= Math.floor(Date.now() / 1000)) {
-        showToast('error', 'Unlock date must be in the future.');
-        return;
+      // If no unlock date provided → default to now + 10 seconds
+      // (allows instant-unlock vaults without the contract rejecting a 0 timestamp)
+      let unlockTimestamp;
+      if (!unlockRaw) {
+        unlockTimestamp = Math.floor(Date.now() / 1000) + 10;
+      } else {
+        unlockTimestamp = Math.floor(new Date(unlockRaw).getTime() / 1000);
+        if (unlockTimestamp <= Math.floor(Date.now() / 1000)) {
+          showToast('error', 'Unlock date must be in the future.');
+          return;
+        }
       }
 
       setBtnLoading('btn-lock', true, 'Locking…');
@@ -817,13 +826,18 @@
         // }));
         // ──────────────────────────────────────────────────────────────
 
-        // ── PLACEHOLDER DATA (remove when contract is live) ────────────
-        allVaults = [
-          { title: 'Project Atlas',         message: 'LOCKED', unlockTs: 1760716800 },
-          { title: 'Letters to future me',  message: 'LOCKED', unlockTs: 1767225600 },
-          { title: 'Genesis Memorandum',    message: 'LOCKED', unlockTs: 1822435200 },
-        ];
+        // ── CONTRACT READ ──────────────────────────────────────────────
+        // Replace with your actual contract method once deployed, e.g.:
+        // const raw = await contract.getMyVaults();
+        // allVaults = raw.map(v => ({
+        //   title:    v.title,
+        //   message:  v.message,   // 'LOCKED' if still sealed
+        //   unlockTs: v.unlockTime.toNumber(),
+        // }));
         // ──────────────────────────────────────────────────────────────
+
+        // No placeholder data — gallery starts empty until contract is wired
+        allVaults = [];
 
         renderVaults(allVaults);
         updateStats(
@@ -862,7 +876,7 @@
               <rect x="2" y="3" width="20" height="14" rx="2"/>
               <path d="M8 21h8m-4-4v4"/>
             </svg>
-            <p>No vaults match your search.</p>
+            <p>No vaults found. Create one above!</p>
           </div>`;
         return;
       }
