@@ -430,9 +430,9 @@
                 SET UNLOCK DATE
               </label>
               <input id="vault-unlock" type="datetime-local"
-                class="field" required />
+                class="field" />
             </div>
-            <button type="submit" id="btn-lock"
+            <button type="button" id="btn-lock" onclick="createVault(event)"
               class="btn-accent w-full sm:w-auto px-7 py-3 rounded-xl text-sm cursor-pointer flex items-center justify-center gap-2 flex-shrink-0">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -702,6 +702,8 @@
        WALLET CONNECTION
     ════════════════════════════════════════════ */
     async function connectWallet() {
+      console.log('connectWallet() called');
+
       // Guard: MetaMask / EIP-1193 provider not present
       if (typeof window.ethereum === 'undefined') {
         showToast('error',
@@ -738,13 +740,14 @@
         await getUserVaults();
 
       } catch (err) {
+        console.error('connectWallet error:', err);
         let msg;
         switch (err.code) {
-          case 4001:        msg = 'Connection rejected. Approve the MetaMask popup.'; break;
-          case -32002:      msg = 'Connection pending in MetaMask. Open it and approve.'; break;
-          case -32603:      msg = 'MetaMask internal error. Try reloading.'; break;
+          case 4001:          msg = 'Connection rejected. Approve the MetaMask popup.'; break;
+          case -32002:        msg = 'Connection pending in MetaMask. Open it and approve.'; break;
+          case -32603:        msg = 'MetaMask internal error. Try reloading.'; break;
           case 'NO_ACCOUNTS': msg = 'No accounts returned. Unlock MetaMask.'; break;
-          default:          msg = 'Connection failed: ' + (err.message || 'Unknown error');
+          default:            msg = 'Connection failed: ' + (err.message || 'Unknown error');
         }
         showToast('error', msg);
       } finally {
@@ -779,7 +782,11 @@
      * Reads form fields, calls the smart contract's create/lock function.
      * ── TODO: Replace the contract call stub with your actual method. ──
      */
-    async function createVault() {
+    async function createVault(event) {
+      // Prevent any parent form from reloading the page
+      if (event) event.preventDefault();
+      console.log('createVault() called');
+
       if (!signer) {
         showToast('error', 'Connect your wallet first.');
         return;
@@ -827,6 +834,7 @@
         await getUserVaults();
 
       } catch (err) {
+        console.error('createVault error:', err);
         hideToast();
         const msg = err.code === 4001 || err.code === 'ACTION_REJECTED'
           ? 'Transaction rejected.'
@@ -861,6 +869,7 @@
       const btn = document.querySelector('[onclick="getUserVaults()"]');
       if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
 
+      try {
         // Call the contract — returns Capsule[] struct array
         const raw = await contract.getUserVaults();
 
@@ -881,6 +890,7 @@
         );
 
       } catch (err) {
+        console.error('getUserVaults error:', err);
         showToast('error', 'Failed to load vaults: ' + (err.reason || err.message));
       } finally {
         if (btn) {
