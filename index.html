@@ -574,92 +574,47 @@
           and ABI here before deploying. ──
     ════════════════════════════════════════════ */
     const CONTRACT_ADDRESS = '0x69161c3EbC9dD1e8828C77fFdd12a59c0712B356';
-    const CONTRACT_ABI     = [
-      [
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "title",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "unlockTime",
-				"type": "uint256"
-			}
-		],
-		"name": "VaultCreated",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "_title",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "_message",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_unlockTime",
-				"type": "uint256"
-			}
-		],
-		"name": "createVault",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getUserVaults",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "string",
-						"name": "title",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "message",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "unlockTime",
-						"type": "uint256"
-					}
-				],
-				"internalType": "struct EpochVault.Capsule[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-]
+    const CONTRACT_ABI = [
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": true,  "internalType": "address", "name": "owner",      "type": "address" },
+          { "indexed": false, "internalType": "string",  "name": "title",      "type": "string"  },
+          { "indexed": false, "internalType": "uint256", "name": "unlockTime", "type": "uint256" }
+        ],
+        "name": "VaultCreated",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          { "internalType": "string",  "name": "_title",      "type": "string"  },
+          { "internalType": "string",  "name": "_message",    "type": "string"  },
+          { "internalType": "uint256", "name": "_unlockTime", "type": "uint256" }
+        ],
+        "name": "createVault",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "getUserVaults",
+        "outputs": [
+          {
+            "components": [
+              { "internalType": "string",  "name": "title",      "type": "string"  },
+              { "internalType": "string",  "name": "message",    "type": "string"  },
+              { "internalType": "uint256", "name": "timestamp",  "type": "uint256" },
+              { "internalType": "uint256", "name": "unlockTime", "type": "uint256" }
+            ],
+            "internalType": "struct EpochVault.Capsule[]",
+            "name": "",
+            "type": "tuple[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
     ];
 
     /* ════════════════════════════════════════════
@@ -857,12 +812,19 @@
 
       try {
         // ── CONTRACT CALL ──────────────────────────────────────────────
-        // Replace with your actual contract method, e.g.:
-        // const tx = await contract.createVault(title, message, unlockTimestamp);
-        // await tx.wait();
-        // ──────────────────────────────────────────────────────────────
-        throw new Error('Contract not deployed yet — fill in CONTRACT_ADDRESS and ABI.');
-        // ↑ Remove the line above once your contract is live.
+        const tx = await contract.createVault(title, message, unlockTimestamp);
+        showToast('pending', 'Transaction submitted — awaiting confirmation…');
+        await tx.wait();
+
+        showToast('success', 'Vault locked on-chain! 🔒');
+
+        // Reset form
+        document.getElementById('vault-title').value   = '';
+        document.getElementById('vault-message').value = '';
+        document.getElementById('vault-unlock').value  = '';
+
+        // Refresh gallery
+        await getUserVaults();
 
       } catch (err) {
         hideToast();
@@ -899,29 +861,17 @@
       const btn = document.querySelector('[onclick="getUserVaults()"]');
       if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
 
-      try {
-        // ── CONTRACT READ ──────────────────────────────────────────────
-        // Replace with your actual contract method, e.g.:
-        // const raw = await contract.getMyVaults();
-        // allVaults = raw.map(v => ({
-        //   title:     v.title,
-        //   message:   v.message,   // 'LOCKED' if still sealed
-        //   unlockTs:  v.unlockTime.toNumber(),
-        // }));
-        // ──────────────────────────────────────────────────────────────
+        // Call the contract — returns Capsule[] struct array
+        const raw = await contract.getUserVaults();
 
-        // ── CONTRACT READ ──────────────────────────────────────────────
-        // Replace with your actual contract method once deployed, e.g.:
-        // const raw = await contract.getMyVaults();
-        // allVaults = raw.map(v => ({
-        //   title:    v.title,
-        //   message:  v.message,   // 'LOCKED' if still sealed
-        //   unlockTs: v.unlockTime.toNumber(),
-        // }));
-        // ──────────────────────────────────────────────────────────────
-
-        // No placeholder data — gallery starts empty until contract is wired
-        allVaults = [];
+        // Map on-chain struct fields → local shape used by renderVaults()
+        const now = Math.floor(Date.now() / 1000);
+        allVaults = raw.map(v => ({
+          title:    v.title,
+          // Show 'LOCKED' sentinel until the unlock time has passed
+          message:  v.unlockTime.toNumber() > now ? 'LOCKED' : v.message,
+          unlockTs: v.unlockTime.toNumber(),
+        }));
 
         renderVaults(allVaults);
         updateStats(
