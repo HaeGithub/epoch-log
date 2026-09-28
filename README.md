@@ -26,14 +26,5 @@ EpochLog is a decentralized application (DApp) built on the BOT Chain that allow
 - `EpochVault.sol` - The Solidity source code for the smart contract.
 - `assets/` - Directory containing project images and logos.
 
-## 🚀 How to Run Locally
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/epoch-log.git
-   ```
-2. Open the project folder in your code editor (e.g., VS Code).
-3. Using a local server extension (like Live Server in VS Code), start the server to serve `index.html`.
-4. Ensure you have the MetaMask extension installed in your browser and connected to the BOT Chain Mainnet.
-
 ---
 *Built for the GirlMeetsTech Hackathon 2026*
