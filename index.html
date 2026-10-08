@@ -266,6 +266,131 @@
       color: #04d9d9;
       flex-shrink: 0;
     }
+
+    /* ══════════════════════════════════════════════
+       THEME TRANSITION
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after {
+      transition: background-color 0.25s ease, border-color 0.25s ease,
+                  color 0.2s ease, box-shadow 0.2s ease;
+    }
+    /* Don't animate transforms / opacity via the wildcard — it breaks animations */
+    .fade-in, .spinner, .protocol-dot, .btn-accent { transition: none; }
+    .btn-accent { transition: box-shadow 0.2s ease, filter 0.2s ease, transform 0.15s ease; }
+    .fade-in    { animation: fadeIn 0.45s ease both; }
+
+    /* ── Theme toggle button ─────────────────────── */
+    #btn-theme {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid #333;
+      background: transparent;
+      color: #aaa;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    #btn-theme:hover { border-color: #04d9d9; color: #04d9d9; }
+
+    /* ══════════════════════════════════════════════
+       LIGHT MODE OVERRIDES  (html.light → …)
+    ══════════════════════════════════════════════ */
+    html.light body {
+      background-color: #f4f4f5;
+      color: #111111;
+    }
+    html.light ::-webkit-scrollbar-track { background: #f4f4f5; }
+
+    /* Navbar */
+    html.light nav {
+      background-color: rgba(255,255,255,0.92) !important;
+      border-color: rgba(0,0,0,0.08) !important;
+    }
+
+    /* Ghost button */
+    html.light .btn-ghost {
+      border-color: #d1d5db;
+      color: #555;
+    }
+    html.light .btn-ghost:hover { border-color: #04d9d9; color: #04d9d9; }
+
+    /* Theme toggle */
+    html.light #btn-theme { border-color: #d1d5db; color: #555; }
+    html.light #btn-theme:hover { border-color: #04d9d9; color: #04d9d9; }
+
+    /* Cards */
+    html.light .bento-card {
+      background-color: #ffffff;
+      border-color: #e5e7eb;
+    }
+    html.light .bento-card:hover { border-color: #d1d5db; }
+
+    /* Inputs */
+    html.light .field {
+      background: #f9fafb;
+      border-color: #d1d5db;
+      color: #111;
+    }
+    html.light .field::placeholder { color: #9ca3af; }
+    html.light .field:focus {
+      border-color: #04d9d9;
+      box-shadow: 0 0 0 3px rgba(4,217,217,0.12);
+    }
+
+    /* datetime picker icon */
+    html.light input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      filter: none;
+    }
+
+    /* Wallet pill */
+    html.light .wallet-pill {
+      background: #f0fafa;
+      border-color: rgba(4,217,217,0.3);
+    }
+
+    /* Toast backgrounds */
+    html.light #toast.success { background:#ecfdf5; border-color:#34d399; color:#065f46; }
+    html.light #toast.error   { background:#fef2f2; border-color:#f87171; color:#991b1b; }
+    html.light #toast.info    { background:#ecfeff; border-color:#04d9d9; color:#0e7490; }
+    html.light #toast.pending { background:#fffbeb; border-color:#fbbf24; color:#92400e; }
+
+    /* Empty state */
+    html.light .empty-state { color: #9ca3af; }
+    html.light .empty-state svg { stroke: #d1d5db; }
+
+    /* Tailwind text color overrides for light mode */
+    html.light .text-gray-400  { color: #6b7280 !important; }
+    html.light .text-gray-500  { color: #9ca3af !important; }
+    html.light .text-gray-600  { color: #6b7280 !important; }
+    html.light .text-gray-700  { color: #374151 !important; }
+    html.light .text-gray-800  { color: #1f2937 !important; }
+    html.light .text-white     { color: #111111 !important; }
+    html.light .border-gray-800 { border-color: #e5e7eb !important; }
+
+    /* Footer */
+    html.light footer {
+      border-color: rgba(0,0,0,0.08) !important;
+    }
+
+    /* Spinner (inverted bg in light mode) */
+    html.light .spinner {
+      border-color: rgba(255,255,255,0.3);
+      border-top-color: #111;
+    }
+
+    /* Search icon */
+    html.light .search-wrap svg { color: #9ca3af; }
+
+    /* Vault count label */
+    html.light #vault-count-label { color: #9ca3af !important; }
+
+    /* Section bg glow — subtle in light mode */
+    html.light #hero-section > div:first-child > div {
+      opacity: 0.4;
+    }
   </style>
 </head>
 <body class="antialiased">
@@ -298,6 +423,30 @@
 
       <!-- Right side -->
       <div class="flex items-center gap-2 sm:gap-3">
+
+        <!-- Theme toggle -->
+        <button id="btn-theme" onclick="toggleTheme()" aria-label="Toggle light/dark mode" title="Toggle theme">
+          <!-- Moon icon (shown in dark mode) -->
+          <svg id="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <!-- Sun icon (shown in light mode) -->
+          <svg id="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               style="display:none;">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1"  x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22"  x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1"  y1="12" x2="3"  y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+
         <!-- Connect button (shown when disconnected) -->
         <button id="btn-connect" onclick="connectWallet()"
           class="btn-accent px-4 sm:px-5 py-2 rounded-lg text-sm cursor-pointer">
@@ -1010,6 +1159,40 @@
       document.getElementById('vault-count-label').textContent =
         `${String(active).padStart(2, '0')} ACTIVE CAPSULES`;
     }
+
+    /* ════════════════════════════════════════════
+       THEME TOGGLE
+    ════════════════════════════════════════════ */
+
+    function applyTheme(isLight) {
+      const html    = document.documentElement;
+      const moon    = document.getElementById('icon-moon');
+      const sun     = document.getElementById('icon-sun');
+
+      if (isLight) {
+        html.classList.add('light');
+        moon.style.display = 'none';
+        sun.style.display  = 'block';
+      } else {
+        html.classList.remove('light');
+        moon.style.display = 'block';
+        sun.style.display  = 'none';
+      }
+    }
+
+    function toggleTheme() {
+      const isCurrentlyLight = document.documentElement.classList.contains('light');
+      const newIsLight = !isCurrentlyLight;
+      localStorage.setItem('epochvault-theme', newIsLight ? 'light' : 'dark');
+      applyTheme(newIsLight);
+    }
+
+    // ── Apply saved theme on page load (no flash) ──
+    (function initTheme() {
+      const saved = localStorage.getItem('epochvault-theme');
+      // Default to dark; switch to light only if explicitly saved
+      applyTheme(saved === 'light');
+    })();
 
     /* ════════════════════════════════════════════
        METAMASK EVENT LISTENERS
